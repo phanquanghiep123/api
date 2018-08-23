@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\api\frontend;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use App\Http\Controllers\Controller;
 use App\Core\APIFrontend;
 use DateTime;
- 
+use ZipArchive;
 class DownloadsController extends APIFrontend
 {
     public function add (Request $request){
@@ -111,7 +112,7 @@ class DownloadsController extends APIFrontend
         return response()->json($this->_DATA,200);
     }
 
-    public function zipfiles(Request $request)
+    public function zipfiles(Request $request,Response $response)
     {
        
         ini_set('memory_limit', '512M');
@@ -127,28 +128,23 @@ class DownloadsController extends APIFrontend
         {
             $d = \App\Models\Downloads::file($today , $track_id, $artist_id, $public_key);
             if($d){
-                // Define Dir Folder
-                $public_dir= public_path();
-                // Zip File Name
-                $zipFileName = $a->name.'.zip';
-                // Create ZipArchive Obj
+                $t = \App\Models\Musics::find($track_id);
+                $public_dir = public_path();
+                $zipFileName = $t->name.'.zip';
                 $zip = new ZipArchive();
                 if ($zip->open($public_dir . '/' . $zipFileName,ZipArchive::CREATE) === TRUE) {
-                    // Add File in ZipArchive
-                    $zip->addFile(base_path($d->path));
-                    $zip->addFile(base_path($d->pathextended));
-                    $zip->addFile(base_path($d->pathpdf));
-                    // Close ZipArchive     
+                    $zip->addFile(base_path($t->path));
+                    $zip->addFile(base_path($t->pathextended));
+                    $zip->addFile(base_path($t->pathpdf)); 
                     $zip->close();
                 }
-                // Set Header
-                $headers = array(
-                    'Content-Type' => 'application/octet-stream',
-                );
                 $filetopath = $public_dir.'/'.$zipFileName;
-                // Create Download Response
                 if(file_exists($filetopath)){
-                    return response()->download($filetopath,$zipFileName,$headers);
+                    header('Content-Type: application/octet-stream');
+                    header("Content-Transfer-Encoding: Binary"); 
+                    header("Content-disposition: attachment; filename=\"" .$zipFileName. "\""); 
+                    readfile($filetopath);
+                    unlink ($filetopath);
                 }
             }
         }

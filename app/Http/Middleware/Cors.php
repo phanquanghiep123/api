@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Middleware;
-
+use Illuminate\Http\Response;
 use Closure;
 
 class Cors
@@ -15,10 +15,8 @@ class Cors
      */
     public function handle($request, Closure $next)
     {
-        return $next($request)
-        ->header('Access-Control-Allow-Origin', '*')
-        ->header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, OPTIONS')
-        ->header('Access-Control-Allow-Headers','Content-Type,X-Requested-With, X-Auth-Token, Origin, Authorization, Accept, Application')
-        ->header('Access-Control-Allow-Credentials',' true');
+        return $next($request)->header('Access-Control-Allow-Origin' , '*')
+            ->header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, DELETE')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With, Application');
     }
 }
