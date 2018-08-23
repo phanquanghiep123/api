@@ -56,6 +56,7 @@ class MusicsController extends APIBackend
         $a->artist_id = $request->artist_id;
         $a->description = $request->description;
         $a->status = $request->status;
+        $a->genre = $request->genre;
         $a->size = 0;
         $a->type = $request->type;
         $a->price =  0;
@@ -72,14 +73,21 @@ class MusicsController extends APIBackend
         $a->save();
         if($request->hasFile('thumbFile')){
             if ($request->file('thumbFile')->isValid()) {
-                $path = $request->thumbFile->move('uploads/images/'.$a->artist_id.'/', uniqid (). '-' .$request->thumbFile->getClientOriginalName());
+                $path = $request->thumbFile->move('uploads/'.md5($a->artist_id).'/', uniqid (). '-' .$request->thumbFile->getClientOriginalName());
                 $a->thumb = $path;  
                 $a->save();      
             }
         }
+        if($request->hasFile('pathexFile')){
+            if ($request->file('pathexFile')->isValid()) {
+                $path = $request->pathexFile->move('uploads/'.md5($a->artist_id).'/', uniqid (). '-' .$request->pathexFile->getClientOriginalName());
+                $a->pathex = $path;    
+                $a->save();     
+            }
+        }
         if($request->hasFile('pathFile')){
             if ($request->file('pathFile')->isValid()) {
-                $path = $request->pathFile->move('uploads/audios/'.$a->artist_id.'/', uniqid (). '-' .$request->pathFile->getClientOriginalName());
+                $path = $request->pathFile->move('uploads/'.md5($a->artist_id).'/', uniqid (). '-' .$request->pathFile->getClientOriginalName());
                 $extension = $request->pathFile->getClientOriginalExtension();
                 $a->size   = $request->pathFile->getClientSize();
                 $a->extension = $extension;
@@ -87,7 +95,21 @@ class MusicsController extends APIBackend
                 $a->save();     
             }
         }
-        $this->_DATA["response"] = $a;
+        if($request->hasFile('pathExtendedFile')){
+            if ($request->file('pathExtendedFile')->isValid()) {
+                $path = $request->pathExtendedFile->move('uploads/'.md5($a->artist_id).'/', uniqid (). '-' .$request->pathExtendedFile->getClientOriginalName());
+                $a->pathextended = $path;    
+                $a->save();     
+            }
+        }
+        if($request->hasFile('pathPDFFile')){
+            if ($request->file('pathPDFFile')->isValid()) {
+                $path = $request->pathPDFFile->move('uploads/'.md5($a->artist_id).'/', uniqid (). '-' .$request->pathPDFFile->getClientOriginalName());
+                $a->pathpdf = $path;    
+                $a->save();     
+            }
+        }
+        $this->_DATA["response"] = \App\Models\Musics::find($a->id);
         $this->_DATA["status"]  = 1;
         return response()->json($this->_DATA ,200);
     }
@@ -100,7 +122,7 @@ class MusicsController extends APIBackend
                 $a->artist_id = $request->artist_id;
                 $a->description = $request->description;
                 $a->status = $request->status;
-                $a->size = 0;
+                $a->genre = $request->genre;
                 $a->type = $request->type;
                 $a->price =  0;
                 $a->version = "1.0.0";
@@ -110,19 +132,40 @@ class MusicsController extends APIBackend
                 $a->save();
                 if($request->hasFile('thumbFile')){
                     if ($request->file('thumbFile')->isValid()) {
-                        $path = $request->thumbFile->move('uploads/images/'.$a->artist_id.'/', uniqid (). '-' .$request->thumbFile->getClientOriginalName());
+                        $path = $request->thumbFile->move('uploads/images/'.md5($a->artist_id).'/', uniqid (). '-' .$request->thumbFile->getClientOriginalName());
                         $a->thumb = $path;
                         $a->save();
+                    }
+                }
+                if($request->hasFile('pathexFile')){
+                    if ($request->file('pathexFile')->isValid()) {
+                        $path = $request->pathexFile->move('uploads/audios/'.md5($a->artist_id).'/', uniqid (). '-' .$request->pathexFile->getClientOriginalName());
+                        $a->pathex = $path;    
+                        $a->save();     
                     }
                 }     
                 if($request->hasFile('pathFile')){
                     if ($request->file('pathFile')->isValid()) {
                         $extension = $request->pathFile->getClientOriginalExtension();
-                        $path = $request->pathFile->move('uploads/audios/'.$a->artist_id.'/', uniqid (). '-' .$request->pathFile->getClientOriginalName());
+                        $path = $request->pathFile->move('uploads/audios/'.md5($a->artist_id).'/', uniqid (). '-' .$request->pathFile->getClientOriginalName());
                         $a->size   = $request->pathFile->getClientSize();
                         $a->extension = $extension;
                         $a->path = $path;  
                         $a->save() ;
+                    }
+                }
+                if($request->hasFile('pathExtendedFile')){
+                    if ($request->file('pathExtendedFile')->isValid()) {
+                        $path = $request->pathExtendedFile->move('uploads/'.md5($a->artist_id).'/', uniqid (). '-' .$request->pathExtendedFile->getClientOriginalName());
+                        $a->pathextended = $path;    
+                        $a->save();     
+                    }
+                }
+                if($request->hasFile('pathPDFFile')){
+                    if ($request->file('pathPDFFile')->isValid()) {
+                        $path = $request->pathPDFFile->move('uploads/'.md5($a->artist_id).'/', uniqid (). '-' .$request->pathPDFFile->getClientOriginalName());
+                        $a->pathpdf = $path;    
+                        $a->save();     
                     }
                 }
                 $this->_DATA["response"] = \App\Models\Musics::find($a->id);

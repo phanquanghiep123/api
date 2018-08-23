@@ -43,9 +43,11 @@ class APIBackend extends Controller
         $this->_TOKEN = @$this->_HEADERS["Authorization"];
         $this->_HOST = @$this->_HEADERS["Host"];
         $this->_AUTH = \App\Models\Users::where("token", "=", $this->_TOKEN)->first();
+        if($this->_AUTH->is_sys != 1) return false;
     }
     public function checkAuth()
-    {
+    { 
+        if($this->_AUTH->is_sys != 1) return false;
         return $this->checkToken();
     }
     public function getAuth()

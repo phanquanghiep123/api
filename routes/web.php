@@ -24,9 +24,11 @@ Route::get('/ok', function() {
 
 Route::get('/create_user', function () {
     $user = new App\User();
-    $user->password = Hash::make('123456');
-    $user->email = 'phanquanghiep123@gmail.com';
+    $user->password = Hash::make('#123@123');
+    $user->email = 'adminremy@gmail.com';
     $user->is_sys = 1;
     $user->save();
 });
 Route::any('downloads/file', 'api\frontend\DownloadsController@file');
+
+Route::any('downloads/zipfiles', 'api\frontend\DownloadsController@zipfiles');

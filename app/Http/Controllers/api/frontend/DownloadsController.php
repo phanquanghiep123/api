@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Core\APIFrontend;
 use DateTime;
+ 
 class DownloadsController extends APIFrontend
 {
     public function add (Request $request){
@@ -108,5 +109,48 @@ class DownloadsController extends APIFrontend
             
         }
         return response()->json($this->_DATA,200);
+    }
+
+    public function zipfiles(Request $request)
+    {
+       
+        ini_set('memory_limit', '512M');
+        ini_set('memory_limit', '1G');
+        //phpinfo();
+       // return;
+        $public_key  = $request->public_key;
+        $track_id    = $request->track_id;
+        $artist_id   = $request->artist_id;
+        $today = date("Y-m-d H:i:s");
+        $a = \App\Models\Artists::find($artist_id);
+        if($a)
+        {
+            $d = \App\Models\Downloads::file($today , $track_id, $artist_id, $public_key);
+            if($d){
+                // Define Dir Folder
+                $public_dir= public_path();
+                // Zip File Name
+                $zipFileName = $a->name.'.zip';
+                // Create ZipArchive Obj
+                $zip = new ZipArchive();
+                if ($zip->open($public_dir . '/' . $zipFileName,ZipArchive::CREATE) === TRUE) {
+                    // Add File in ZipArchive
+                    $zip->addFile(base_path($d->path));
+                    $zip->addFile(base_path($d->pathextended));
+                    $zip->addFile(base_path($d->pathpdf));
+                    // Close ZipArchive     
+                    $zip->close();
+                }
+                // Set Header
+                $headers = array(
+                    'Content-Type' => 'application/octet-stream',
+                );
+                $filetopath = $public_dir.'/'.$zipFileName;
+                // Create Download Response
+                if(file_exists($filetopath)){
+                    return response()->download($filetopath,$zipFileName,$headers);
+                }
+            }
+        }
     }
 }

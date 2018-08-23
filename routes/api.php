@@ -51,7 +51,15 @@ Route::middleware(['cors', 'Api'])->group(function () {
 
     Route::post('backend/musics/sort', 'api\backend\MusicsController@sort');
 
+
     /***************************!--musics--***************************/
+
+    /***************************--invoices--***************************/
+    
+    Route::post('backend/invoices/gets', 'api\backend\InvoicesController@gets');
+
+    
+    /***************************!--invoices--***************************/
 });
 /* ----------------------------!backend------------------------------------------*/
 

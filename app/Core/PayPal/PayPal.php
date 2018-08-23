@@ -90,7 +90,7 @@ class PayPal {
         $payer->setPaymentMethod("paypal");
         $item1 = new Item();
         $item1->setName($request->name)
-            ->setCurrency($request->current)
+            ->setCurrency($request->currency)
             ->setQuantity(1)
             ->setSku("123123") // Similar to `item_number` in Classic API
             ->setPrice($request->price);
@@ -103,7 +103,7 @@ class PayPal {
         $details->setSubtotal($request->price);
 
         $amount = new Amount();
-        $amount->setCurrency($request->current)
+        $amount->setCurrency($request->currency)
             ->setTotal($request->price)
             ->setDetails($details);
 
@@ -143,7 +143,7 @@ class PayPal {
                 $amount = new Amount();
                 $details = new Details();
                 $details->setSubtotal($request['price']);
-                $amount->setCurrency($request['current']);
+                $amount->setCurrency($request['currency']);
                 $amount->setTotal($request['price']);
                 $amount->setDetails($details);
                 $transaction->setAmount($amount);

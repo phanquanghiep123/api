@@ -50,7 +50,7 @@ class ArtistsController extends APIBackend
                 ->where('currency_artists.artist_id', '=', $id );
             })
             ->select(['currencys.*','currency_artists.price'])->get()->toArray();
-            $this->_DATA["response"]["musics"] = \App\Models\Artists::find($id)->musics()->orderBy('sort','ASC')->get();
+            $this->_DATA["response"]["musics"] = \App\Models\Artists::find($id)->musics()->where([["musics.status","=",1]])->orderBy('sort','ASC')->get();
             $this->_DATA["response"]['prices'] = $currencys;
             $this->_DATA["status"]  = 1;
         }
@@ -86,7 +86,7 @@ class ArtistsController extends APIBackend
         }
         if($request->hasFile('avatarFile')){
             if ($request->file('avatarFile')->isValid()) {
-                $path = $request->avatarFile->move('uploads/images/'.$a->id.'/', uniqid (). '-' .$request->avatarFile->getClientOriginalName());
+                $path = $request->avatarFile->move('uploads/'.md5($a->id).'/', uniqid (). '-' .$request->avatarFile->getClientOriginalName());
                 $a->avatar = $path;    
                 $a->save();    
             }
@@ -134,7 +134,7 @@ class ArtistsController extends APIBackend
                 $a->save();
                 if($request->hasFile('avatarFile')){
                     if ($request->file('avatarFile')->isValid()) {
-                        $path = $request->avatarFile->move('uploads/images/'.$a->id.'/', uniqid (). '-' .$request->avatarFile->getClientOriginalName());
+                        $path = $request->avatarFile->move('uploads/'.md5($a->id).'/', uniqid (). '-' .$request->avatarFile->getClientOriginalName());
                         $a->avatar = $path;    
                         $a->save();    
                     }

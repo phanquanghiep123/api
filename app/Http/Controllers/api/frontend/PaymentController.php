@@ -27,27 +27,53 @@ class PaymentController extends APIFrontend
     public function checkout (Request $request){
         $artist = \App\Models\Artists::find($request->artist_id);
         if($artist){
-            $checkouts = new \App\Models\Checkouts();
-            $checkouts->full_name = $request->full_name;
-            $checkouts->email = $request->email;
-            $checkouts->artist_id = $artist->id;
-            $checkouts->payment_option = $request->payment_option;
+            $checkout = new \App\Models\Checkouts();
+            $checkout->full_name = $request->full_name;
+            $checkout->email = $request->email;
+            $checkout->artist_id = $artist->id;
+            $checkout->payment_option = $request->payment_option;
+            $currency = null;
             if($request->price){
-                $curentcy_artist = \App\Models\Currency_artists::where([['currency_id',"=",$request->price["id"]],['artist_id',"=", $artist->id]])->first();
-                if($curentcy_artist){
-                    $checkouts->price = $curentcy_artist->price;
+                $currency_artist = \App\Models\Currency_artists::where([['currency_id',"=",$request->price["id"]],['artist_id',"=", $artist->id]])->first();
+                if($currency_artist){
+                    $checkout->price = $currency_artist->price;
                 }
-                $checkouts->currency = $request->price["id"];
+                $currency =\App\Models\Currencys::find($currency_artist->currency_id);
+                $checkout->currency = $currency->id;
             }
-            $checkouts->status = 0;
-            $checkouts->key = md5(uniqid());
-            $checkouts->success_url = $request->success_url;
-            $checkouts->cancel_url = $request->cancel_url;
-            $checkouts->save();
-            if($checkouts->id){
-                $this->_DATA["response"] = $checkouts->toArray();
+            $checkout->status = 0;
+            $checkout->key = md5(uniqid());
+            $checkout->success_url = $request->success_url;
+            $checkout->cancel_url = $request->cancel_url;
+            $checkout->save();
+            if($checkout->id){
+                $this->_DATA["response"] = $checkout->toArray();
                 $this->_DATA["status"]   = 1;
             }  
+            if(@$currency->currency == "INR"){
+                $request["redirect_url"] = route("api.payment.ccavenue_success",["success"=> "true","key" => $checkout->key]);
+                $request["cancel_url"]  = route("api.payment.ccavenue_cancel",["success"=> "flase","key" => $checkout->key]);
+                $data = [
+                    "redirect_url"  => route("api.payment.ccavenue_success",["key" => $checkout->key]),
+                    "cancel_url"    => route("api.payment.ccavenue_cancel",["key" => $checkout->key]),
+                    "billing_name"  => $checkout->full_name,
+                    "billing_email" => $checkout->email,
+                    "currency"      => $currency->currency,
+                    "amount"        => $checkout->price,
+                    "order_id"      => $checkout->id
+                ];
+                $ccavenue = $this->ccavenue($data);
+                $checkout->encrypted_data = @$ccavenue['encrypted_data'];
+                $checkout->access_code    = @$ccavenue['access_code'];
+                $checkout->host           = @$ccavenue['action'];
+                $checkout->payment_option = "ccavenue";
+                $checkout->status = 1;
+                $checkout->save();
+                $this->_DATA["response"]['url'] = route('api.payment.ccavenue_submit',["key" =>  $checkout->key]);
+                $this->_DATA["response"]['checkout'] =  $checkout->toArray();
+                $this->_DATA["redirect"] = 1;
+                $this->_DATA["status"]   = 1;
+            } 
         }
         return response()->json($this->_DATA,200);
         
@@ -59,16 +85,16 @@ class PaymentController extends APIFrontend
             $request->name = $artist->full_name;
             $request->email = $artist->email;
             if($request->price){
-                $curentcy_artist = \App\Models\Currency_artists::where([['currency_id',"=",$request->price["id"]],['artist_id',"=", $artist->id]])->first();
-                if($curentcy_artist){
-                    $request->price = $curentcy_artist->price;
-                    $current =  \App\Models\Currencys::find($curentcy_artist->currency_id);
-                    $request->current = $current->value;
-                }
+                $currency_artist = \App\Models\Currency_artists::where([['currency_id',"=",$request->price["id"]],['artist_id',"=", $artist->id]])->first();
+                if($currency_artist){
+                    $request->price = $currency_artist->price;
+                    $currency =  \App\Models\Currencys::find($currency_artist->currency_id);
+                    $request->currency = $currency->currency;
+                }   
             }
             $checkout->status = 1;
             $checkout->save();
-            if($request->payment_option == "paypal"){
+            if( $request->currency == "USD"){
                 $request->success_url = route("api.payment.paypal_success",["success"=> "true","key" => $checkout->key]);
                 $request->cancel_url = route("api.payment.paypal_cancel",["success"=> "flase","key" => $checkout->key]); 
                 $paypal = $this->paypal($request);
@@ -77,7 +103,7 @@ class PaymentController extends APIFrontend
                 $this->_DATA["response"] = $paypal;
                 $this->_DATA["redirect"] = 1;
                 $this->_DATA["status"]   = 1; 
-            } else if($request->payment_option == "ccavenue"){
+            } else if($request->currency == "INR"){
                 $request["redirect_url"] = route("api.payment.ccavenue_success",["success"=> "true","key" => $checkout->key]);
                 $request["cancel_url"]  = route("api.payment.ccavenue_cancel",["success"=> "flase","key" => $checkout->key]);
                 $data = [
@@ -85,7 +111,7 @@ class PaymentController extends APIFrontend
                     "cancel_url"    => route("api.payment.ccavenue_cancel",["key" => $checkout->key]),
                     "billing_name"  => $checkout['full_name'],
                     "billing_email" => $checkout['email'],
-                    "currency"      => $request->current,
+                    "currency"      => $request->currency,
                     "amount"        => $request->price,
                     "order_id"      => $checkout->id
                 ];
@@ -118,13 +144,13 @@ class PaymentController extends APIFrontend
             $checkout = \App\Models\Checkouts::where("key","=",$request->key)->first(); 
             if(@$checkout->status == 1 ){
                 $artist = \App\Models\Artists::find($checkout->artist_id);  
-                $current =  \App\Models\Currencys::find($checkout->currency);
+                $currency =  \App\Models\Currencys::find($checkout->currency);
                 if($artist){
                     $request['name'] = $artist->name;
-                    $request['current'] = $current->value;
-                    $curentcy_artist = \App\Models\Currency_artists::where([['currency_id',"=",$checkout->currency],['artist_id',"=", $artist->id]])->first();
-                    if($curentcy_artist){
-                        $request['price'] = $curentcy_artist->price;
+                    $request['currency'] = $currency->currency;
+                    $currency_artist = \App\Models\Currency_artists::where([['currency_id',"=",$checkout->currency],['artist_id',"=", $artist->id]])->first();
+                    if($currency_artist){
+                        $request['price'] = $currency_artist->price;
                     }else{
                         return redirect(assert('/'));
                     }
@@ -191,7 +217,7 @@ class PaymentController extends APIFrontend
     public function ccavenue_success (Request $request){
         if($request->key && $request->encResp){
             $encResp = $request->encResp;
-            $checkout = \App\Models\Checkouts::where("key","=",$request->key)->first(); 
+            $checkout = \App\Models\Checkouts::where("key","=",$request->key)->first();         
             if(@$checkout->status == 1 ){
                 $artist = \App\Models\Artists::find($checkout->artist_id);  
                 if($artist){
@@ -205,7 +231,7 @@ class PaymentController extends APIFrontend
                     $payment->ckeckout_id = $checkout->id;
                     try {
                         $payment->info = json_encode(@$return['info']);
-                        $payment->invoice_id = $this->generate_invoice($artist->name). '-' . @$return['info'][0]['order_id'];
+                        $payment->invoice_id = $this->generate_invoice($artist->name). '-' . @$return['info'][0][1];
                         $payment->status_custom = @$return['order_status'];
                         $payment->message = @$return['message'];
                         if($payment->status_custom == "Success" || $payment->status_custom == "Aborted"){
@@ -221,10 +247,10 @@ class PaymentController extends APIFrontend
                     return redirect($checkout->success_url . "?status=true&key=$checkout->key");
                 } 
             }else{
-                 return redirect(assert('/'));
+                return redirect(assert('/'));
             }          
         }else{
-            return redirect(assert('/'));
+           return redirect(assert('/'));
         }
     }
     public function ccavenue_cancel (Request $request){
