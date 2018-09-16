@@ -113,13 +113,13 @@ class ArtistsController extends APIBackend
                             $cak = \App\Models\Currency_artists::where([["currency_id","=",$value->id],["artist_id","=",$a->id]])->first();
                             if($cak){
                                 $cak->price = $value->price;
-                                $ca->save();
+                                $cak->save();
                             }else {
-                                $ca = new \App\Models\Currency_artists();
-                                $ca->artist_id = $a->id;
-                                $ca->currency_id = $value->id;
-                                $ca->price = $value->price;
-                                $ca->save();
+                                $cak = new \App\Models\Currency_artists();
+                                $cak->artist_id = $a->id;
+                                $cak->currency_id = $value->id;
+                                $cak->price = $value->price;
+                                $cak->save();
                             }   
                        } 
                     }

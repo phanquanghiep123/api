@@ -85,7 +85,7 @@ class DownloadsController extends APIFrontend
                     $value->tracks = \App\Models\Artists::find($value->id)->musics()->select("artist_id","id","name","description","type","size")->orderBy('sort','ASC')->get()->toArray();
                     $artists[] = $value;
                 }
-                $tracks = \App\Models\Musics::whereIn("artist_id",$artist_ids)->orderBy('sort','ASC')->get()->toArray();
+                $tracks = \App\Models\Musics::whereIn("artist_id",$artist_ids)->where([["musics.status","=",1]])->orderBy('sort','ASC')->get()->toArray();
                 $datetime1 = new DateTime($today);
                 $datetime2 = new DateTime($ds->end);
                 $interval = $datetime1->diff($datetime2);
@@ -95,7 +95,7 @@ class DownloadsController extends APIFrontend
                 $s = $interval->s ;
                 $h = $d > 0 ? $d * 24 + $h : $h;
                 $ds->diffTime = $h . ":" . $i . ":" . $s ;
-                $this->_DATA["response"] = $artists;
+                $this->_DATA["response"]["artist"] = \App\Models\Artists::find($ds->artist_id);
                 $this->_DATA["response"]["tracks"] = $tracks;
                 $this->_DATA["response"]["download"] = $ds;
                 $this->_DATA["status"]   = 1;
@@ -117,8 +117,6 @@ class DownloadsController extends APIFrontend
        
         ini_set('memory_limit', '512M');
         ini_set('memory_limit', '1G');
-        //phpinfo();
-       // return;
         $public_key  = $request->public_key;
         $track_id    = $request->track_id;
         $artist_id   = $request->artist_id;
@@ -133,9 +131,18 @@ class DownloadsController extends APIFrontend
                 $zipFileName = $t->name.'.zip';
                 $zip = new ZipArchive();
                 if ($zip->open($public_dir . '/' . $zipFileName,ZipArchive::CREATE) === TRUE) {
-                    $zip->addFile(base_path($t->path));
-                    $zip->addFile(base_path($t->pathextended));
-                    $zip->addFile(base_path($t->pathpdf)); 
+                    if($t->path && file_exists(base_path($t->pathextended))){
+                        $info = ( pathinfo (base_path($t->path)));
+                        $zip->addFile(base_path($t->path),$info['basename']);
+                    }
+                    if($t->pathextended && file_exists(base_path($t->pathextended))){
+                        $info = ( pathinfo (base_path($t->pathextended)));
+                        $zip->addFile(base_path($t->pathextended),$info['basename']);
+                    }
+                    if($t->pathpdf && file_exists(base_path($t->pathpdf))){
+                        $info = ( pathinfo (base_path($t->pathpdf)));
+                        $zip->addFile(base_path($t->pathpdf),$info['basename']); 
+                    }                   
                     $zip->close();
                 }
                 $filetopath = $public_dir.'/'.$zipFileName;

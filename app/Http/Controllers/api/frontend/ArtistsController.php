@@ -23,7 +23,7 @@ class ArtistsController extends APIFrontend
                 ->select(['currencys.*','currency_artists.price'])->get()->toArray();
                 $artists->prices = $currencys;
                 $this->_DATA["response"] = $artists;
-                $this->_DATA["response"]["tracks"] = \App\Models\Artists::find($id)->musics()->where([["status","=",1]])->orderBy('sort','ASC')->get();
+                $this->_DATA["response"]["tracks"] = \App\Models\Artists::find($id)->musics()->where([["musics.status","=",1]])->orderBy('sort','ASC')->get();
                 $this->_DATA["status"]  = 1;
             }   
         } 

@@ -10,8 +10,8 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
-Route::get('/bb.php', function() {
-	die('TEST ok');
+Route::get('/bb', function() {
+	dd(get_loaded_extensions());
 });
 
 Route::get('/', function () {

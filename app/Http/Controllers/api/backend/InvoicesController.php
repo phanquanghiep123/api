@@ -11,12 +11,18 @@ class InvoicesController extends APIBackend
     public function gets (Request $request){
         $this->_DATA["page"] = $request->page;
         $page   = $request->page  - 1;
-        $where  = []; 
+        $where  = [];
         $offset = $page * $this->_PAGINGNUMBER;
         $this->_MODEL = new \App\Models\Invoices();
-        if($request->where != null){
-            $where[] = $request->where;
+        if($request->model != null){
+            foreach ($request->model as $key => $value) {
+                $where[] = [$key,"=",$value];
+            }   
         }
+        
+        if($where){
+            $this->_MODE = $this->_MODEL->where($where);
+        }    
         $count  = $this->_MODEL->count();
         $results = $this->_MODEL->select(["payments.*","checkouts.full_name","checkouts.email","checkouts.price","currencys.currency","checkouts.payment_option","artists.name as artist_name"])
         ->join("checkouts","checkouts.id","=","payments.ckeckout_id")
